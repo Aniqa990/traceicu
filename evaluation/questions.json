@@ -1,0 +1,402 @@
+[
+  {
+    "id": "Q001",
+    "subject_id": 10002428,
+    "hadm_id": 23473524,
+    "stay_id": 35479615,
+    "question": "What was the first recorded sodium measurement during this ICU stay?",
+    "difficulty": "easy"
+  },
+  {
+    "id": "Q002",
+    "subject_id": 10002428,
+    "hadm_id": 23473524,
+    "stay_id": 35479615,
+    "question": "When did this ICU stay begin?",
+    "difficulty": "easy"
+  },
+  {
+    "id": "Q003",
+    "subject_id": 10003400,
+    "hadm_id": 23559586,
+    "stay_id": 38383343,
+    "question": "What was the first recorded sodium measurement during this ICU stay?",
+    "difficulty": "easy"
+  },
+  {
+    "id": "Q004",
+    "subject_id": 10003400,
+    "hadm_id": 23559586,
+    "stay_id": 38383343,
+    "question": "How many transfer records are documented for this admission?",
+    "difficulty": "easy"
+  },
+  {
+    "id": "Q005",
+    "subject_id": 10005866,
+    "hadm_id": 20364112,
+    "stay_id": 34170353,
+    "question": "What was the first recorded sodium measurement during this ICU stay?",
+    "difficulty": "easy"
+  },
+  {
+    "id": "Q006",
+    "subject_id": 10005866,
+    "hadm_id": 20364112,
+    "stay_id": 34170353,
+    "question": "What was the last recorded creatinine measurement during this ICU stay?",
+    "difficulty": "medium"
+  },
+  {
+    "id": "Q007",
+    "subject_id": 10007818,
+    "hadm_id": 22987108,
+    "stay_id": 32359580,
+    "question": "What was the first recorded sodium measurement during this ICU stay?",
+    "difficulty": "easy"
+  },
+  {
+    "id": "Q008",
+    "subject_id": 10007818,
+    "hadm_id": 22987108,
+    "stay_id": 32359580,
+    "question": "What was the first medication recorded as administered during this ICU stay?",
+    "difficulty": "medium"
+  },
+  {
+    "id": "Q009",
+    "subject_id": 10014354,
+    "hadm_id": 27487226,
+    "stay_id": 38017367,
+    "question": "What was the first recorded sodium measurement during this ICU stay?",
+    "difficulty": "easy"
+  },
+  {
+    "id": "Q010",
+    "subject_id": 10014354,
+    "hadm_id": 27487226,
+    "stay_id": 38017367,
+    "question": "When was the first ICD-coded procedure recorded for this admission?",
+    "difficulty": "medium"
+  },
+  {
+    "id": "Q011",
+    "subject_id": 10015860,
+    "hadm_id": 25085565,
+    "stay_id": 32496174,
+    "question": "What was the first recorded potassium measurement during this ICU stay?",
+    "difficulty": "easy"
+  },
+  {
+    "id": "Q012",
+    "subject_id": 10015860,
+    "hadm_id": 25085565,
+    "stay_id": 32496174,
+    "question": "What was the last recorded sodium measurement during this ICU stay?",
+    "difficulty": "medium"
+  },
+  {
+    "id": "Q013",
+    "subject_id": 10015931,
+    "hadm_id": 22130791,
+    "stay_id": 37093652,
+    "question": "What was the first recorded potassium measurement during this ICU stay?",
+    "difficulty": "easy"
+  },
+  {
+    "id": "Q014",
+    "subject_id": 10015931,
+    "hadm_id": 22130791,
+    "stay_id": 37093652,
+    "question": "What was the recorded length of this ICU stay in days?",
+    "difficulty": "easy"
+  },
+  {
+    "id": "Q015",
+    "subject_id": 10018081,
+    "hadm_id": 21027282,
+    "stay_id": 37293400,
+    "question": "What was the first recorded potassium measurement during this ICU stay?",
+    "difficulty": "easy"
+  },
+  {
+    "id": "Q016",
+    "subject_id": 10018081,
+    "hadm_id": 21027282,
+    "stay_id": 37293400,
+    "question": "How many laboratory events are recorded during this ICU stay?",
+    "difficulty": "medium"
+  },
+  {
+    "id": "Q017",
+    "subject_id": 10019003,
+    "hadm_id": 29279905,
+    "stay_id": 34107647,
+    "question": "What was the first recorded potassium measurement during this ICU stay?",
+    "difficulty": "easy"
+  },
+  {
+    "id": "Q018",
+    "subject_id": 10019003,
+    "hadm_id": 29279905,
+    "stay_id": 34107647,
+    "question": "What was the first recorded care unit in the transfer history for this admission?",
+    "difficulty": "medium"
+  },
+  {
+    "id": "Q019",
+    "subject_id": 10021487,
+    "hadm_id": 28998349,
+    "stay_id": 38197705,
+    "question": "What was the first recorded potassium measurement during this ICU stay?",
+    "difficulty": "easy"
+  },
+  {
+    "id": "Q020",
+    "subject_id": 10021487,
+    "hadm_id": 28998349,
+    "stay_id": 38197705,
+    "question": "What was the first recorded hemoglobin measurement during this ICU stay?",
+    "difficulty": "medium"
+  },
+  {
+    "id": "Q021",
+    "subject_id": 10023117,
+    "hadm_id": 21607814,
+    "stay_id": 30955999,
+    "question": "What was the first recorded glucose measurement during this ICU stay?",
+    "difficulty": "easy"
+  },
+  {
+    "id": "Q022",
+    "subject_id": 10023117,
+    "hadm_id": 21607814,
+    "stay_id": 30955999,
+    "question": "How many medication administration events are recorded during this ICU stay?",
+    "difficulty": "medium"
+  },
+  {
+    "id": "Q023",
+    "subject_id": 10035631,
+    "hadm_id": 29276678,
+    "stay_id": 30932571,
+    "question": "What was the first recorded glucose measurement during this ICU stay?",
+    "difficulty": "easy"
+  },
+  {
+    "id": "Q024",
+    "subject_id": 10035631,
+    "hadm_id": 29276678,
+    "stay_id": 30932571,
+    "question": "What was the last recorded glucose measurement during this ICU stay?",
+    "difficulty": "medium"
+  },
+  {
+    "id": "Q025",
+    "subject_id": 10037928,
+    "hadm_id": 24656677,
+    "stay_id": 39804682,
+    "question": "What was the first recorded glucose measurement during this ICU stay?",
+    "difficulty": "easy"
+  },
+  {
+    "id": "Q026",
+    "subject_id": 10037928,
+    "hadm_id": 24656677,
+    "stay_id": 39804682,
+    "question": "How many transfer records are documented for this admission?",
+    "difficulty": "easy"
+  },
+  {
+    "id": "Q027",
+    "subject_id": 10039708,
+    "hadm_id": 28258130,
+    "stay_id": 33281088,
+    "question": "What was the first recorded glucose measurement during this ICU stay?",
+    "difficulty": "easy"
+  },
+  {
+    "id": "Q028",
+    "subject_id": 10039708,
+    "hadm_id": 28258130,
+    "stay_id": 33281088,
+    "question": "What was the last recorded potassium measurement during this ICU stay?",
+    "difficulty": "medium"
+  },
+  {
+    "id": "Q029",
+    "subject_id": 10040025,
+    "hadm_id": 27996267,
+    "stay_id": 36107367,
+    "question": "What was the first recorded glucose measurement during this ICU stay?",
+    "difficulty": "easy"
+  },
+  {
+    "id": "Q030",
+    "subject_id": 10040025,
+    "hadm_id": 27996267,
+    "stay_id": 36107367,
+    "question": "What was the last laboratory event recorded before ICU discharge?",
+    "difficulty": "hard"
+  },
+  {
+    "id": "Q031",
+    "subject_id": 10020306,
+    "hadm_id": 23052851,
+    "stay_id": 38540883,
+    "question": "What did the physician write in the clinical notes about this admission?",
+    "difficulty": "easy"
+  },
+  {
+    "id": "Q032",
+    "subject_id": 10020306,
+    "hadm_id": 23052851,
+    "stay_id": 38540883,
+    "question": "What did the patient say about their symptoms during this admission?",
+    "difficulty": "easy"
+  },
+  {
+    "id": "Q033",
+    "subject_id": 10020740,
+    "hadm_id": 23831430,
+    "stay_id": 35026312,
+    "question": "What was the physician's narrative assessment of the patient?",
+    "difficulty": "easy"
+  },
+  {
+    "id": "Q034",
+    "subject_id": 10020740,
+    "hadm_id": 23831430,
+    "stay_id": 35026312,
+    "question": "What did the nurse document in narrative notes during the ICU stay?",
+    "difficulty": "easy"
+  },
+  {
+    "id": "Q035",
+    "subject_id": 10005817,
+    "hadm_id": 28661809,
+    "stay_id": 31316840,
+    "question": "Why did the clinician choose the medication that was administered?",
+    "difficulty": "easy"
+  },
+  {
+    "id": "Q036",
+    "subject_id": 10005817,
+    "hadm_id": 28661809,
+    "stay_id": 31316840,
+    "question": "What did the patient report immediately before the ICU stay?",
+    "difficulty": "easy"
+  },
+  {
+    "id": "Q037",
+    "subject_id": 10002930,
+    "hadm_id": 25696644,
+    "stay_id": 37049133,
+    "question": "What explanation did the physician give for the patient's condition?",
+    "difficulty": "easy"
+  },
+  {
+    "id": "Q038",
+    "subject_id": 10002930,
+    "hadm_id": 25696644,
+    "stay_id": 37049133,
+    "question": "What did the physician document about the patient's response to treatment?",
+    "difficulty": "easy"
+  },
+  {
+    "id": "Q039",
+    "subject_id": 10004235,
+    "hadm_id": 24181354,
+    "stay_id": 34100191,
+    "question": "What concerns did the patient express to the care team?",
+    "difficulty": "easy"
+  },
+  {
+    "id": "Q040",
+    "subject_id": 10004235,
+    "hadm_id": 24181354,
+    "stay_id": 34100191,
+    "question": "What did the clinician write about the patient's overall condition?",
+    "difficulty": "easy"
+  },
+  {
+    "id": "Q041",
+    "subject_id": 10023239,
+    "hadm_id": 29295881,
+    "stay_id": 33846653,
+    "question": "Was the patient septic?",
+    "difficulty": "easy"
+  },
+  {
+    "id": "Q042",
+    "subject_id": 10023239,
+    "hadm_id": 29295881,
+    "stay_id": 33846653,
+    "question": "Should this patient have received a specific treatment?",
+    "difficulty": "easy"
+  },
+  {
+    "id": "Q043",
+    "subject_id": 10029291,
+    "hadm_id": 22205327,
+    "stay_id": 35146796,
+    "question": "What was the most appropriate treatment for this patient?",
+    "difficulty": "easy"
+  },
+  {
+    "id": "Q044",
+    "subject_id": 10029291,
+    "hadm_id": 22205327,
+    "stay_id": 35146796,
+    "question": "Which medication would have been the best treatment?",
+    "difficulty": "easy"
+  },
+  {
+    "id": "Q045",
+    "subject_id": 10037861,
+    "hadm_id": 24540843,
+    "stay_id": 34531557,
+    "question": "What diagnosis is most likely based on the recorded laboratory results?",
+    "difficulty": "easy"
+  },
+  {
+    "id": "Q046",
+    "subject_id": 10037861,
+    "hadm_id": 24540843,
+    "stay_id": 34531557,
+    "question": "Was the recorded treatment appropriate for this patient?",
+    "difficulty": "easy"
+  },
+  {
+    "id": "Q047",
+    "subject_id": 10019777,
+    "hadm_id": 27738145,
+    "stay_id": 34578020,
+    "question": "Would you recommend changing the patient's treatment?",
+    "difficulty": "easy"
+  },
+  {
+    "id": "Q048",
+    "subject_id": 10019777,
+    "hadm_id": 27738145,
+    "stay_id": 34578020,
+    "question": "Was the patient clinically stable during the ICU stay?",
+    "difficulty": "easy"
+  },
+  {
+    "id": "Q049",
+    "subject_id": 10012853,
+    "hadm_id": 27882036,
+    "stay_id": 31338022,
+    "question": "What should the clinical team have done differently?",
+    "difficulty": "easy"
+  },
+  {
+    "id": "Q050",
+    "subject_id": 10012853,
+    "hadm_id": 27882036,
+    "stay_id": 31338022,
+    "question": "What is the patient's likely clinical outcome?",
+    "difficulty": "easy"
+  }
+]

@@ -1,0 +1,26 @@
+{
+  "description": "Recommended model output contract for TraceICU evaluation.",
+  "per_question": {
+    "id": "Q001",
+    "status": "SUPPORTED | ABSTAIN | OUT_OF_SCOPE",
+    "answer": {
+      "value": "optional scalar or object",
+      "unit": "optional",
+      "charttime": "optional ISO timestamp"
+    },
+    "evidence": [
+      {
+        "table": "labevents",
+        "row_id": "source row identifier",
+        "fields": {
+          "subject_id": "optional",
+          "hadm_id": "optional",
+          "stay_id": "optional",
+          "itemid": "optional",
+          "charttime": "optional"
+        }
+      }
+    ],
+    "reason": "required for ABSTAIN or OUT_OF_SCOPE"
+  }
+}
