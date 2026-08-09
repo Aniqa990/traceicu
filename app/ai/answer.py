@@ -17,7 +17,7 @@ from __future__ import annotations
 from typing import Any
 
 from app.ai.retrieval import RetrievalResult
-from app.ai.schemas import AskResponse, QueryPlan
+from app.ai.schema import AskResponse, QueryPlan
 
 
 def _fmt_value(fact: dict[str, Any]) -> str:
