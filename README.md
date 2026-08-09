@@ -199,7 +199,6 @@ Create a `.env` file in the project root:
 GROQ_API_KEY=your_groq_api_key_here
 ```
 
-**Never commit a real API key to GitHub.**
 
 For evaluation/demo environments, the evaluator can provide their own Groq API key.
 
@@ -525,8 +524,6 @@ Or temporarily in PowerShell:
 $env:GROQ_API_KEY="your_groq_api_key_here"
 ```
 
-Do not commit `.env` or any real API credentials.
-
 ---
 
 # ▶️ Run the Backend
@@ -680,39 +677,37 @@ Potential next steps include:
 
 ---
 
-# 📸 Interface Preview
+## 📸 Interface Preview
 
-> The screenshots below represent the current TraceICU interface.
+The screenshots below represent the current TraceICU interface.
 
-Place screenshots in `docs/screenshots/` using these names if you want them rendered on GitHub:
+### Patient Search
 
-```text
-docs/screenshots/home.png
-docs/screenshots/timeline.png
-docs/screenshots/event-cluster.png
-docs/screenshots/source-evidence.png
-docs/screenshots/icu-observations.png
-docs/screenshots/medications.png
-docs/screenshots/ask-record.png
-```
+![TraceICU Patient Search](docs/screenshots/home.jpeg)
 
-Then add:
+### Patient Timeline
 
-```markdown
-![TraceICU Patient Search](docs/screenshots/home.png)
+![TraceICU Patient Timeline](docs/screenshots/timeline.jpeg)
 
-![TraceICU Patient Timeline](docs/screenshots/timeline.png)
+### Event Cluster
 
-![TraceICU Event Cluster](docs/screenshots/event-cluster.png)
+![TraceICU Event Cluster](docs/screenshots/event-cluster.jpeg)
 
-![TraceICU Source Evidence](docs/screenshots/source-evidence.png)
+### Source Evidence
 
-![TraceICU ICU Observations](docs/screenshots/icu-observations.png)
+![TraceICU Source Evidence](docs/screenshots/source-evidence.jpeg)
 
-![TraceICU Medications](docs/screenshots/medications.png)
+### ICU Observations
 
-![TraceICU Ask the Record](docs/screenshots/ask-record.png)
-```
+![TraceICU ICU Observations](docs/screenshots/icu-observations.jpeg)
+
+### Medications
+
+![TraceICU Medications](docs/screenshots/medications.jpeg)
+
+### Ask the Record
+
+![TraceICU Ask the Record](docs/screenshots/ask-record.jpeg)
 
 ---
 
