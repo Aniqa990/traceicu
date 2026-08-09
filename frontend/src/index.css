@@ -35,54 +35,54 @@
 :root {
   --radius: 0.5rem;
 
-  /* Light — clean clinical */
-  --background: oklch(0.985 0.003 240);
-  --foreground: oklch(0.21 0.03 250);
+  /* Hospital theme — pure white with soft blue accents */
+  --background: oklch(0.998 0 0);
+  --foreground: oklch(0.20 0.02 250);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.21 0.03 250);
+  --card-foreground: oklch(0.20 0.02 250);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.21 0.03 250);
-  --primary: oklch(0.55 0.1 195);
-  --primary-foreground: oklch(0.99 0.005 200);
-  --secondary: oklch(0.96 0.01 240);
-  --secondary-foreground: oklch(0.28 0.03 250);
-  --muted: oklch(0.96 0.008 240);
-  --muted-foreground: oklch(0.52 0.02 250);
-  --accent: oklch(0.94 0.02 195);
-  --accent-foreground: oklch(0.3 0.06 200);
+  --popover-foreground: oklch(0.20 0.02 250);
+  --primary: oklch(0.60 0.08 200);
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.97 0.004 240);
+  --secondary-foreground: oklch(0.30 0.02 250);
+  --muted: oklch(0.95 0.004 240);
+  --muted-foreground: oklch(0.55 0.015 250);
+  --accent: oklch(0.65 0.06 195);
+  --accent-foreground: oklch(1 0 0);
   --destructive: oklch(0.58 0.19 25);
-  --destructive-foreground: oklch(0.99 0.005 20);
+  --destructive-foreground: oklch(1 0 0);
   --warning: oklch(0.72 0.15 70);
   --warning-foreground: oklch(0.25 0.05 70);
-  --border: oklch(0.9 0.01 240);
-  --input: oklch(0.9 0.01 240);
-  --ring: oklch(0.55 0.1 195);
+  --border: oklch(0.92 0.004 240);
+  --input: oklch(0.97 0.004 240);
+  --ring: oklch(0.60 0.08 200);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    /* Dark — clinical ink */
-    --background: oklch(0.17 0.02 250);
-    --foreground: oklch(0.92 0.01 240);
-    --card: oklch(0.21 0.025 250);
-    --card-foreground: oklch(0.92 0.01 240);
-    --popover: oklch(0.2 0.025 250);
-    --popover-foreground: oklch(0.92 0.01 240);
-    --primary: oklch(0.72 0.12 190);
-    --primary-foreground: oklch(0.18 0.03 240);
-    --secondary: oklch(0.26 0.02 250);
-    --secondary-foreground: oklch(0.9 0.01 240);
-    --muted: oklch(0.25 0.02 250);
-    --muted-foreground: oklch(0.66 0.02 250);
-    --accent: oklch(0.3 0.04 200);
-    --accent-foreground: oklch(0.9 0.03 195);
-    --destructive: oklch(0.65 0.19 25);
-    --destructive-foreground: oklch(0.98 0.01 20);
-    --warning: oklch(0.78 0.14 75);
-    --warning-foreground: oklch(0.2 0.04 70);
-    --border: oklch(0.3 0.02 250);
-    --input: oklch(0.32 0.02 250);
-    --ring: oklch(0.72 0.12 190);
+    /* Light hospital theme (preferred for healthcare) — very light gray */
+    --background: oklch(0.97 0.003 240);
+    --foreground: oklch(0.22 0.02 250);
+    --card: oklch(0.99 0.002 240);
+    --card-foreground: oklch(0.22 0.02 250);
+    --popover: oklch(0.99 0.002 240);
+    --popover-foreground: oklch(0.22 0.02 250);
+    --primary: oklch(0.60 0.08 200);
+    --primary-foreground: oklch(1 0 0);
+    --secondary: oklch(0.96 0.004 240);
+    --secondary-foreground: oklch(0.28 0.02 250);
+    --muted: oklch(0.93 0.004 240);
+    --muted-foreground: oklch(0.52 0.015 250);
+    --accent: oklch(0.65 0.06 195);
+    --accent-foreground: oklch(1 0 0);
+    --destructive: oklch(0.58 0.19 25);
+    --destructive-foreground: oklch(1 0 0);
+    --warning: oklch(0.72 0.15 70);
+    --warning-foreground: oklch(0.25 0.05 70);
+    --border: oklch(0.90 0.004 240);
+    --input: oklch(0.96 0.004 240);
+    --ring: oklch(0.60 0.08 200);
   }
 }
 
