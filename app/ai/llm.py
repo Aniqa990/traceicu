@@ -27,7 +27,7 @@ import json
 import re
 from functools import lru_cache
 
-from app.config import HF_PROVIDER, HF_TOKEN, LLM_MODEL_ID
+from app.config import HF_TOKEN, LLM_MODEL_ID
 
 
 class LLMConfigError(RuntimeError):
@@ -35,7 +35,7 @@ class LLMConfigError(RuntimeError):
 
 
 class LLMClient:
-    def __init__(self, model_id: str = LLM_MODEL_ID, provider: str | None = HF_PROVIDER,
+    def __init__(self, model_id: str = LLM_MODEL_ID,
                  token: str | None = HF_TOKEN):
         if not token:
             raise LLMConfigError(
@@ -47,7 +47,6 @@ class LLMClient:
             )
 
         self.model_id = model_id
-        self.provider = provider
         self.token = token
         self._client = None
 
@@ -58,8 +57,6 @@ class LLMClient:
         from huggingface_hub import InferenceClient
 
         kwargs = {"api_key": self.token}
-        if self.provider:
-            kwargs["provider"] = self.provider
 
         self._client = InferenceClient(**kwargs)
         return self._client
