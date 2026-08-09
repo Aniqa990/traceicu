@@ -1,53 +1,51 @@
-"""
-Quick CLI for exercising the timeline builder without a web framework.
+from fastapi import FastAPI, Query
+from app.database import get_connection
+from app.timeline import get_timeline
 
-    python main.py --subject-id 10006
-    python main.py --subject-id 10006 --hadm-id 25208949
-    python main.py --subject-id 10006 --stay-id 94667 --no-icu-observations
-
-Prints the resulting Timeline as JSON. Once you're ready to wire this
-into FastAPI, get_patient_timeline() is the one function you call from
-a route handler -- db.get_connection() should be created once at app
-startup and reused across requests.
-"""
-
-from __future__ import annotations
-
-import argparse
-import json
-import sys
-
-from db import get_connection
-from timeline import ScopeNotFoundError, get_patient_timeline
+app = FastAPI(
+    title="TraceICU API",
+    version="0.1.0"
+)
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description="Reconstruct a MIMIC-IV patient timeline.")
-    parser.add_argument("--subject-id", type=int, required=True)
-    parser.add_argument("--hadm-id", type=int, default=None)
-    parser.add_argument("--stay-id", type=int, default=None)
-    parser.add_argument(
-        "--no-icu-observations",
-        action="store_true",
-        help="Skip chartevents (fast, admission/transfer/lab/med/dx/procedure timeline only).",
-    )
-    args = parser.parse_args()
+@app.get("/api/v1/health")
+def health():
+    return {
+        "status": "ok"
+    }
 
-    con = get_connection()
+
+@app.get("/api/v1/test-db")
+def test_db():
+    conn = get_connection()
+
     try:
-        timeline = get_patient_timeline(
-            con,
-            subject_id=args.subject_id,
-            hadm_id=args.hadm_id,
-            stay_id=args.stay_id,
-            include_icu_observations=not args.no_icu_observations,
-        )
-    except ScopeNotFoundError as e:
-        print(f"error: {e}", file=sys.stderr)
-        sys.exit(1)
+        result = conn.execute(
+            "SELECT COUNT(*) FROM patients"
+        ).fetchone()
 
-    print(timeline.model_dump_json(indent=2, exclude_none=True))
+        return {
+            "patients": result[0]
+        }
 
+    finally:
+        conn.close()
 
-if __name__ == "__main__":
-    main()
+@app.get("/api/v1/encounters/{hadm_id}/timeline")
+def timeline(
+    hadm_id: int,
+    limit: int = Query(50, ge=1, le=500),
+    offset: int = Query(0, ge=0)
+):
+    events = get_timeline(
+        hadm_id=hadm_id,
+        limit=limit,
+        offset=offset
+    )
+
+    return {
+        "hadm_id": hadm_id,
+        "limit": limit,
+        "offset": offset,
+        "events": events
+    }
