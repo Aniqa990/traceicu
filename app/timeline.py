@@ -1,5 +1,5 @@
 """
-Patient timeline reconstruction for MIMIC-IV.
+Hierarchical patient timeline reconstruction for MIMIC-IV.
 
 Public entry point:
     get_patient_timeline(con, subject_id)
@@ -7,42 +7,38 @@ Public entry point:
 The timeline is reconstructed from the tables already loaded into
 database/mimic.duckdb.
 
-Included tables:
-    - patients
-    - admissions
-    - transfers
-    - labevents
-    - d_labitems
-    - emar
-    - procedures_icd
-    - d_icd_procedures
-    - icustays
-    - chartevents
-    - d_items
+Hierarchy:
 
-The timeline contains:
-    - Admission / discharge events
-    - Transfer events
-    - Laboratory events
-    - Medication administration events from eMAR
-    - Procedure events
-    - ICU stay events
-    - ICU observation events from chartevents
+    Patient Journey
+    ├── Admission
+    ├── Transfer
+    ├── ICU Stay
+    │   ├── Labs
+    │   │   └── individual lab events
+    │   ├── ICU observations
+    │   │   └── individual observation events
+    │   └── Medications
+    │       └── individual medication events
+    ├── Procedure
+    └── Discharge
 
-High-volume laboratory and ICU observation events are clustered by
-time proximity.
-
-Pagination is handled by the API layer after the complete timeline
-has been reconstructed and sorted.
+Important:
+    - No timeline table is created in DuckDB.
+    - Source rows remain the source of truth.
+    - Derived category groups use Event.children.
+    - Every individual event retains its Evidence.
+    - Labs and medications are associated with an ICU stay by
+      checking whether their event time falls within the ICU stay.
+    - Events outside an ICU stay remain top-level journey events.
 """
 
 from __future__ import annotations
 
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 
 import duckdb
 
-from app.config import CLUSTER_WINDOW_MINUTES, MAX_ICU_OBSERVATIONS
+from app.config import MAX_ICU_OBSERVATIONS
 from app.models import Event, Evidence, Timeline
 
 
@@ -53,6 +49,7 @@ class ScopeNotFoundError(ValueError):
 # ==========================================================================
 # Helpers
 # ==========================================================================
+
 
 def _to_dt(value) -> datetime | None:
     """Convert DuckDB date/datetime values to datetime."""
@@ -73,9 +70,98 @@ def _to_dt(value) -> datetime | None:
     return None
 
 
+def _event_inside_icu(
+    event: Event,
+    icu_event: Event,
+) -> bool:
+    """
+    Return True when an event belongs inside an ICU stay.
+
+    An event belongs to the ICU stay when its event_time falls between
+    the ICU admission and discharge timestamps.
+
+    If the ICU discharge time is missing, the ICU stay is treated as
+    open-ended.
+    """
+
+    if event.event_time is None:
+        return False
+
+    if icu_event.event_time is None:
+        return False
+
+    if event.event_time < icu_event.event_time:
+        return False
+
+    if (
+        icu_event.event_end_time is not None
+        and event.event_time > icu_event.event_end_time
+    ):
+        return False
+
+    return True
+
+
+def _make_category_cluster(
+    *,
+    subject_id: int,
+    hadm_id: int,
+    stay_id: int,
+    event_type: str,
+    label: str,
+    events: list[Event],
+) -> Event | None:
+    """
+    Create a semantic category group.
+
+    Example:
+
+        Labs · 142
+            ├── Sodium
+            ├── WBC
+            └── ...
+
+    The individual source events remain untouched in children.
+    """
+
+    if not events:
+        return None
+
+    events = sorted(
+        events,
+        key=lambda event: (
+            event.event_time or datetime.max,
+            event.event_id,
+        ),
+    )
+
+    return Event(
+        event_id=(
+            f"{event_type.lower()}-"
+            f"{hadm_id}-"
+            f"{stay_id}"
+        ),
+        subject_id=subject_id,
+        hadm_id=hadm_id,
+        stay_id=stay_id,
+        event_time=events[0].event_time,
+        event_end_time=events[-1].event_time,
+        event_type=event_type,
+        label=f"{label} · {len(events)}",
+        is_derived=True,
+        derivation_rule=(
+            f"Grouped {len(events)} individual {label.lower()} "
+            f"events belonging to ICU stay {stay_id}."
+        ),
+        children=events,
+        evidence=[],
+    )
+
+
 # ==========================================================================
-# Admission events
+# Admission / discharge events
 # ==========================================================================
+
 
 def _admission_events(
     con: duckdb.DuckDBPyConnection,
@@ -115,7 +201,6 @@ def _admission_events(
     events = []
 
     for row in rows:
-
         r = dict(zip(columns, row))
 
         evidence = [
@@ -125,27 +210,25 @@ def _admission_events(
             )
         ]
 
-        # Admission event
-        events.append(
-            Event(
-                event_id=f"admission-start-{r['hadm_id']}",
-                subject_id=subject_id,
-                hadm_id=r["hadm_id"],
-                event_time=_to_dt(r["admittime"]),
-                event_type="ADMISSION",
-                event_subtype=r.get("admission_type"),
-                label=(
-                    f"Admitted "
-                    f"({r.get('admission_type') or 'unknown type'})"
-                ),
-                value=r.get("admission_location"),
-                evidence=evidence,
+        if r.get("admittime") is not None:
+            events.append(
+                Event(
+                    event_id=f"admission-start-{r['hadm_id']}",
+                    subject_id=subject_id,
+                    hadm_id=r["hadm_id"],
+                    event_time=_to_dt(r["admittime"]),
+                    event_type="ADMISSION",
+                    event_subtype=r.get("admission_type"),
+                    label=(
+                        f"Admitted "
+                        f"({r.get('admission_type') or 'unknown type'})"
+                    ),
+                    value=r.get("admission_location"),
+                    evidence=evidence,
+                )
             )
-        )
 
-        # Discharge event
         if r.get("dischtime") is not None:
-
             events.append(
                 Event(
                     event_id=f"admission-end-{r['hadm_id']}",
@@ -172,6 +255,7 @@ def _admission_events(
 # ==========================================================================
 # Transfer events
 # ==========================================================================
+
 
 def _transfer_events(
     con: duckdb.DuckDBPyConnection,
@@ -206,8 +290,10 @@ def _transfer_events(
     events = []
 
     for row in rows:
-
         r = dict(zip(columns, row))
+
+        if r.get("intime") is None:
+            continue
 
         events.append(
             Event(
@@ -221,7 +307,7 @@ def _transfer_events(
                 label=(
                     r.get("careunit")
                     or r.get("eventtype")
-                    or "transfer"
+                    or "Transfer"
                 ),
                 evidence=[
                     Evidence(
@@ -238,6 +324,7 @@ def _transfer_events(
 # ==========================================================================
 # Laboratory events
 # ==========================================================================
+
 
 def _lab_events(
     con: duckdb.DuckDBPyConnection,
@@ -285,7 +372,6 @@ def _lab_events(
     events = []
 
     for row in rows:
-
         r = dict(zip(columns, row))
 
         value = (
@@ -328,19 +414,12 @@ def _lab_events(
 # eMAR medication events
 # ==========================================================================
 
+
 def _emar_events(
     con: duckdb.DuckDBPyConnection,
     subject_id: int,
     hadm_id: int,
 ) -> list[Event]:
-
-    """
-    Reconstruct medication administration/documentation events from eMAR.
-
-    MIMIC-IV eMAR does not contain an event_type column. The event_txt
-    column describes the medication administration/documentation event,
-    so it is used as the event subtype.
-    """
 
     rows = con.execute(
         """
@@ -380,7 +459,6 @@ def _emar_events(
     events = []
 
     for row in rows:
-
         r = dict(zip(columns, row))
 
         events.append(
@@ -393,7 +471,7 @@ def _emar_events(
                 event_subtype=r.get("event_txt"),
                 label=(
                     r.get("medication")
-                    or "medication"
+                    or "Medication"
                 ),
                 value=r.get("event_txt"),
                 evidence=[
@@ -407,9 +485,11 @@ def _emar_events(
 
     return events
 
+
 # ==========================================================================
 # Procedure events
 # ==========================================================================
+
 
 def _procedure_events(
     con: duckdb.DuckDBPyConnection,
@@ -431,6 +511,7 @@ def _procedure_events(
            AND p.icd_version = d.icd_version
         WHERE p.subject_id = ?
           AND p.hadm_id = ?
+          AND p.chartdate IS NOT NULL
         ORDER BY p.chartdate
         """,
         [subject_id, hadm_id],
@@ -447,7 +528,6 @@ def _procedure_events(
     events = []
 
     for row in rows:
-
         r = dict(zip(columns, row))
 
         events.append(
@@ -465,6 +545,7 @@ def _procedure_events(
                 label=(
                     r.get("long_title")
                     or r.get("icd_code")
+                    or "Procedure"
                 ),
                 value=r.get("icd_code"),
                 evidence=[
@@ -482,6 +563,7 @@ def _procedure_events(
 # ==========================================================================
 # ICU stay events
 # ==========================================================================
+
 
 def _icu_stay_events(
     con: duckdb.DuckDBPyConnection,
@@ -519,7 +601,6 @@ def _icu_stay_events(
     stay_ids = []
 
     for row in rows:
-
         r = dict(zip(columns, row))
 
         stay_id = r["stay_id"]
@@ -533,12 +614,14 @@ def _icu_stay_events(
                 hadm_id=hadm_id,
                 stay_id=stay_id,
                 event_time=_to_dt(r["intime"]),
+                event_end_time=_to_dt(r["outtime"]),
                 event_type="ICU_STAY",
                 event_subtype="admission",
                 label=(
-                    f"ICU admission "
-                    f"({r.get('first_careunit')})"
+                    f"ICU Stay "
+                    f"({r.get('first_careunit') or 'unknown unit'})"
                 ),
+                value=r.get("first_careunit"),
                 evidence=[
                     Evidence(
                         source_table="icustays",
@@ -548,36 +631,13 @@ def _icu_stay_events(
             )
         )
 
-        if r.get("outtime") is not None:
-
-            events.append(
-                Event(
-                    event_id=f"icu-end-{stay_id}",
-                    subject_id=subject_id,
-                    hadm_id=hadm_id,
-                    stay_id=stay_id,
-                    event_time=_to_dt(r["outtime"]),
-                    event_type="ICU_STAY",
-                    event_subtype="discharge",
-                    label=(
-                        f"ICU discharge "
-                        f"({r.get('last_careunit')})"
-                    ),
-                    evidence=[
-                        Evidence(
-                            source_table="icustays",
-                            source_fields=r,
-                        )
-                    ],
-                )
-            )
-
     return events, stay_ids
 
 
 # ==========================================================================
 # ICU observation events
 # ==========================================================================
+
 
 def _icu_observation_events(
     con: duckdb.DuckDBPyConnection,
@@ -612,9 +672,7 @@ def _icu_observation_events(
         ],
     ).fetchall()
 
-    truncated = (
-        len(rows) > MAX_ICU_OBSERVATIONS
-    )
+    truncated = len(rows) > MAX_ICU_OBSERVATIONS
 
     rows = rows[:MAX_ICU_OBSERVATIONS]
 
@@ -632,7 +690,6 @@ def _icu_observation_events(
     events = []
 
     for index, row in enumerate(rows):
-
         r = dict(zip(columns, row))
 
         value = (
@@ -671,102 +728,100 @@ def _icu_observation_events(
 
 
 # ==========================================================================
-# Event clustering
+# Hierarchy construction
 # ==========================================================================
 
-def _cluster_by_time(
-    events: list[Event],
-    cluster_type: str,
-    window_minutes: int = CLUSTER_WINDOW_MINUTES,
-) -> list[Event]:
 
+def _attach_icu_children(
+    *,
+    subject_id: int,
+    hadm_id: int,
+    icu_event: Event,
+    labs: list[Event],
+    observations: list[Event],
+    medications: list[Event],
+) -> Event:
     """
-    Cluster consecutive events that occur within the configured
-    time window.
+    Attach category groups to an ICU stay.
 
-    Original events remain inside the cluster's children field so
-    no underlying evidence is lost.
+    The resulting structure is:
+
+        ICU_STAY
+        ├── LAB_CLUSTER
+        ├── ICU_OBSERVATION_CLUSTER
+        └── MEDICATION_CLUSTER
     """
 
-    if not events:
-        return []
+    stay_id = icu_event.stay_id
 
-    timed = sorted(
-        [
-            event
-            for event in events
-            if event.event_time is not None
-        ],
-        key=lambda event: event.event_time,
-    )
+    if stay_id is None:
+        return icu_event
 
-    untimed = [
+    icu_labs = [
         event
-        for event in events
-        if event.event_time is None
+        for event in labs
+        if _event_inside_icu(event, icu_event)
     ]
 
-    clusters: list[list[Event]] = []
-    current: list[Event] = []
+    icu_observations = [
+        event
+        for event in observations
+        if _event_inside_icu(event, icu_event)
+    ]
 
-    for event in timed:
+    icu_medications = [
+        event
+        for event in medications
+        if _event_inside_icu(event, icu_event)
+    ]
 
-        if (
-            current
-            and (
-                event.event_time
-                - current[-1].event_time
-            )
-            > timedelta(
-                minutes=window_minutes
-            )
-        ):
-            clusters.append(current)
-            current = []
+    lab_group = _make_category_cluster(
+        subject_id=subject_id,
+        hadm_id=hadm_id,
+        stay_id=stay_id,
+        event_type="LAB_CLUSTER",
+        label="Labs",
+        events=icu_labs,
+    )
 
-        current.append(event)
+    observation_group = _make_category_cluster(
+        subject_id=subject_id,
+        hadm_id=hadm_id,
+        stay_id=stay_id,
+        event_type="ICU_OBSERVATION_CLUSTER",
+        label="ICU observations",
+        events=icu_observations,
+    )
 
-    if current:
-        clusters.append(current)
+    medication_group = _make_category_cluster(
+        subject_id=subject_id,
+        hadm_id=hadm_id,
+        stay_id=stay_id,
+        event_type="MEDICATION_CLUSTER",
+        label="Medications",
+        events=icu_medications,
+    )
 
-    grouped: list[Event] = []
-
-    for cluster in clusters:
-
-        if len(cluster) == 1:
-            grouped.append(cluster[0])
-            continue
-
-        grouped.append(
-            Event(
-                event_id=(
-                    f"{cluster_type.lower()}-cluster-"
-                    f"{cluster[0].event_id}"
-                ),
-                subject_id=cluster[0].subject_id,
-                hadm_id=cluster[0].hadm_id,
-                stay_id=cluster[0].stay_id,
-                event_time=cluster[0].event_time,
-                event_end_time=cluster[-1].event_time,
-                event_type=(
-                    f"{cluster_type}_CLUSTER"
-                ),
-                label=(
-                    f"{cluster_type.title().replace('_', ' ')} "
-                    f"cluster ({len(cluster)} observations)"
-                ),
-                is_derived=True,
-                derivation_rule=(
-                    f"Grouped {len(cluster)} "
-                    f"{cluster_type} events occurring "
-                    f"within {window_minutes}-minute "
-                    f"windows of one another."
-                ),
-                children=cluster,
-            )
+    children = [
+        group
+        for group in (
+            lab_group,
+            observation_group,
+            medication_group,
         )
+        if group is not None
+    ]
 
-    return grouped + untimed
+    children.sort(
+        key=lambda event: (
+            event.event_time or datetime.max,
+            event.event_type,
+        )
+    )
+
+    icu_event.children = children
+
+    return icu_event
 
 
 # ==========================================================================
@@ -777,18 +832,36 @@ def get_patient_timeline(
     con: duckdb.DuckDBPyConnection,
     subject_id: int,
 ) -> Timeline:
-
     """
-    Reconstruct the complete timeline for a patient.
+    Reconstruct the hierarchical patient journey.
 
-    The public function intentionally accepts only subject_id.
+    Hierarchy:
 
-    All hospital admissions belonging to that patient are included.
+        PATIENT JOURNEY
+        ├── Admission
+        ├── Transfer
+        ├── ICU Stay
+        │   ├── Labs · N
+        │   │   ├── individual lab
+        │   │   └── ...
+        │   ├── ICU observations · N
+        │   │   ├── individual observation
+        │   │   └── ...
+        │   └── Medications · N
+        │       ├── individual medication
+        │       └── ...
+        ├── Procedure
+        └── Discharge
+
+    Events are assigned to an ICU stay only when their event_time
+    falls inside that ICU stay's intime -> outtime interval.
+
+    Events outside an ICU stay remain at the patient-journey level.
     """
 
-    # ----------------------------------------------------------------------
+    # ------------------------------------------------------------------
     # Validate patient
-    # ----------------------------------------------------------------------
+    # ------------------------------------------------------------------
 
     patient = con.execute(
         """
@@ -804,9 +877,9 @@ def get_patient_timeline(
             f"No patient found with subject_id={subject_id}"
         )
 
-    # ----------------------------------------------------------------------
-    # Get all admissions for the patient
-    # ----------------------------------------------------------------------
+    # ------------------------------------------------------------------
+    # Get all admissions
+    # ------------------------------------------------------------------
 
     admission_rows = con.execute(
         """
@@ -818,58 +891,41 @@ def get_patient_timeline(
         [subject_id],
     ).fetchall()
 
-    hadm_ids = [
-        row[0]
-        for row in admission_rows
-    ]
+    hadm_ids = [row[0] for row in admission_rows]
 
-    events: list[Event] = []
+    top_level_events: list[Event] = []
 
-    # ----------------------------------------------------------------------
+    # ------------------------------------------------------------------
     # Process every admission
-    # ----------------------------------------------------------------------
+    # ------------------------------------------------------------------
 
     for hadm_id in hadm_ids:
 
-        # Admission
-        events.extend(
-            _admission_events(
-                con,
-                subject_id,
-                hadm_id,
-            )
+        # --------------------------------------------------------------
+        # Major journey events
+        # --------------------------------------------------------------
+
+        admission_events = _admission_events(
+            con,
+            subject_id,
+            hadm_id,
         )
 
-        # Transfers
-        events.extend(
-            _transfer_events(
-                con,
-                subject_id,
-                hadm_id,
-            )
+        transfer_events = _transfer_events(
+            con,
+            subject_id,
+            hadm_id,
         )
 
-        # Medication administration
-        events.extend(
-            _emar_events(
-                con,
-                subject_id,
-                hadm_id,
-            )
+        procedure_events = _procedure_events(
+            con,
+            subject_id,
+            hadm_id,
         )
 
-        # Procedures
-        events.extend(
-            _procedure_events(
-                con,
-                subject_id,
-                hadm_id,
-            )
-        )
-
-        # ------------------------------------------------------------------
-        # Laboratory events
-        # ------------------------------------------------------------------
+        # --------------------------------------------------------------
+        # High-volume sources
+        # --------------------------------------------------------------
 
         labs = _lab_events(
             con,
@@ -877,66 +933,188 @@ def get_patient_timeline(
             hadm_id,
         )
 
-        events.extend(
-            _cluster_by_time(
-                labs,
-                "LAB",
-            )
-        )
-
-        # ------------------------------------------------------------------
-        # ICU events
-        # ------------------------------------------------------------------
-
-        icu_events, stay_ids = _icu_stay_events(
+        medications = _emar_events(
             con,
             subject_id,
             hadm_id,
         )
 
-        events.extend(icu_events)
+        # --------------------------------------------------------------
+        # ICU stays
+        # --------------------------------------------------------------
 
-        # ------------------------------------------------------------------
-        # ICU observations
-        # ------------------------------------------------------------------
+        icu_stays, stay_ids = _icu_stay_events(
+            con,
+            subject_id,
+            hadm_id,
+        )
+
+        # --------------------------------------------------------------
+        # Collect ICU observations
+        # --------------------------------------------------------------
+
+        all_observations: list[Event] = []
 
         for stay_id in stay_ids:
 
-            observations, truncated = (
-                _icu_observation_events(
-                    con,
-                    subject_id,
-                    stay_id,
-                )
-            )
-
-            clustered = _cluster_by_time(
-                observations,
-                "ICU_OBSERVATION",
+            observations, truncated = _icu_observation_events(
+                con,
+                subject_id,
+                stay_id,
             )
 
             if truncated:
-
-                for event in clustered:
-
+                for event in observations:
                     event.derivation_rule = (
                         (event.derivation_rule or "")
                         + (
-                            f" [NOTE: capped at "
-                            f"{MAX_ICU_OBSERVATIONS} "
-                            f"observations for "
-                            f"stay_id={stay_id}; "
-                            f"more observations exist.]"
+                            f" [NOTE: ICU observations were capped "
+                            f"at {MAX_ICU_OBSERVATIONS} for "
+                            f"stay_id={stay_id}.]"
                         )
                     ).strip()
 
-            events.extend(clustered)
+            all_observations.extend(observations)
 
-    # ----------------------------------------------------------------------
-    # Sort final timeline chronologically
-    # ----------------------------------------------------------------------
+        # --------------------------------------------------------------
+        # Track events assigned underneath ICU stays
+        # --------------------------------------------------------------
 
-    events.sort(
+        assigned_lab_ids: set[str] = set()
+        assigned_observation_ids: set[str] = set()
+        assigned_medication_ids: set[str] = set()
+
+        # --------------------------------------------------------------
+        # Build ICU hierarchy
+        # --------------------------------------------------------------
+
+        for icu_event in icu_stays:
+
+            _attach_icu_children(
+                subject_id=subject_id,
+                hadm_id=hadm_id,
+                icu_event=icu_event,
+                labs=labs,
+                observations=all_observations,
+                medications=medications,
+            )
+
+            for child_group in icu_event.children:
+
+                if child_group.event_type == "LAB_CLUSTER":
+                    assigned_lab_ids.update(
+                        child.event_id
+                        for child in child_group.children
+                    )
+
+                elif (
+                    child_group.event_type
+                    == "ICU_OBSERVATION_CLUSTER"
+                ):
+                    assigned_observation_ids.update(
+                        child.event_id
+                        for child in child_group.children
+                    )
+
+                elif child_group.event_type == "MEDICATION_CLUSTER":
+                    assigned_medication_ids.update(
+                        child.event_id
+                        for child in child_group.children
+                    )
+
+        # --------------------------------------------------------------
+        # Find high-volume events that were NOT placed under ICU
+        # --------------------------------------------------------------
+
+        remaining_labs = [
+            event
+            for event in labs
+            if event.event_id not in assigned_lab_ids
+        ]
+
+        remaining_observations = [
+            event
+            for event in all_observations
+            if event.event_id not in assigned_observation_ids
+        ]
+
+        remaining_medications = [
+            event
+            for event in medications
+            if event.event_id not in assigned_medication_ids
+        ]
+
+        # --------------------------------------------------------------
+        # Add major events to patient journey
+        # --------------------------------------------------------------
+
+        top_level_events.extend(admission_events)
+        top_level_events.extend(transfer_events)
+        top_level_events.extend(procedure_events)
+
+        # ICU_STAY is itself a top-level journey event.
+        #
+        # Its children contain:
+        #
+        #   LAB_CLUSTER
+        #   ICU_OBSERVATION_CLUSTER
+        #   MEDICATION_CLUSTER
+        #
+        # Therefore the hierarchy becomes:
+        #
+        # ICU_STAY
+        #   ├── LAB_CLUSTER
+        #   ├── ICU_OBSERVATION_CLUSTER
+        #   └── MEDICATION_CLUSTER
+        #
+        top_level_events.extend(icu_stays)
+
+        # --------------------------------------------------------------
+        # Remaining events stay at journey level
+        # --------------------------------------------------------------
+
+        remaining_lab_group = _make_category_cluster(
+            subject_id=subject_id,
+            hadm_id=hadm_id,
+            stay_id=None,
+            event_type="LAB_CLUSTER",
+            label="Labs",
+            events=remaining_labs,
+        )
+
+        remaining_observation_group = _make_category_cluster(
+            subject_id=subject_id,
+            hadm_id=hadm_id,
+            stay_id=None,
+            event_type="ICU_OBSERVATION_CLUSTER",
+            label="ICU observations",
+            events=remaining_observations,
+        )
+
+        remaining_medication_group = _make_category_cluster(
+            subject_id=subject_id,
+            hadm_id=hadm_id,
+            stay_id=None,
+            event_type="MEDICATION_CLUSTER",
+            label="Medications",
+            events=remaining_medications,
+        )
+
+        top_level_events.extend(
+            group
+            for group in (
+                remaining_lab_group,
+                remaining_observation_group,
+                remaining_medication_group,
+            )
+            if group is not None
+        )
+
+    # ------------------------------------------------------------------
+    # Sort patient journey
+    # ------------------------------------------------------------------
+
+    top_level_events.sort(
         key=lambda event: (
             event.event_time or datetime.max,
             event.event_type,
@@ -944,18 +1122,18 @@ def get_patient_timeline(
         )
     )
 
-    # ----------------------------------------------------------------------
-    # Return Timeline model
-    # ----------------------------------------------------------------------
+    # ------------------------------------------------------------------
+    # Return Timeline
+    # ------------------------------------------------------------------
 
     return Timeline(
         subject_id=subject_id,
         hadm_id=None,
         stay_id=None,
-        events=events,
+        events=top_level_events,
         event_count=sum(
             _count(event)
-            for event in events
+            for event in top_level_events
         ),
         tables_used=[
             "patients",
@@ -980,11 +1158,9 @@ def get_patient_timeline(
 
 def _count(event: Event) -> int:
     """
-    Count an event and all of its child events.
+    Count an event and all descendants.
 
-    This means event_count represents both:
-        - top-level timeline events
-        - underlying events preserved inside clusters
+    A derived group counts as one event plus all of its children.
     """
 
     return (
