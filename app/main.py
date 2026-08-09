@@ -7,6 +7,9 @@ from app.database import get_connection
 from app.timeline import ScopeNotFoundError, get_patient_timeline
 from app.cache import timeline_cache
 
+from app.timeline import ScopeNotFoundError, get_patient_timeline, find_event
+from app.subjects import search_subjects, get_subject_overview
+
 from app.ai.concepts import init_concept_index
 from app.ai.llm import get_llm_client
 from app.ai.intents import extract_query_plan, ALLOWED_INTENTS
@@ -43,6 +46,18 @@ async def lifespan(app: FastAPI):
     yield
     conn.close()
 
+def _serialize_event_summary(event) -> dict:
+    """
+    Strip `children` from a cluster event for the Level-1 journey
+    response, keeping only a count. Individual events are unaffected
+    (they never had children) and keep their embedded `evidence`, so
+    the provenance drawer for a non-clustered event still needs zero
+    extra requests.
+    """
+    data = event.model_dump(mode="json", exclude_none=True, exclude={"children"})
+    if event.children:
+        data["child_count"] = len(event.children)
+    return data
 
 app = FastAPI(
     title="TraceICU API",
@@ -50,6 +65,14 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+from fastapi.middleware.cors import CORSMiddleware
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.get("/api/v1/health")
 def health():
@@ -62,6 +85,32 @@ def test_db():
     result = conn.execute("SELECT COUNT(*) FROM patients").fetchone()
     return {"patients": result[0]}
 
+
+@app.get("/api/v1/subjects/search")
+def subjects_search(
+    q: str = Query(..., min_length=1),
+    limit: int = Query(10, ge=1, le=25),
+):
+    conn = app.state.db.cursor()
+    results = search_subjects(conn, q, limit)
+    return {"results": [r.model_dump() for r in results]}
+
+
+@app.get("/api/v1/subjects/{subject_id}")
+def subject_overview(subject_id: int):
+    conn = app.state.db.cursor()
+    overview = get_subject_overview(conn, subject_id)
+    if overview is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"No patient found with subject_id={subject_id}.",
+        )
+    return overview.model_dump()
+
+
+# ==========================================================================
+# Timeline (Level 1) — now lightweight
+# ==========================================================================
 
 @app.get("/api/v1/timeline")
 def timeline(
@@ -105,8 +154,63 @@ def timeline(
         "limit": limit,
         "offset": offset,
         "total_events": len(tl.events),
-        "events": [event.model_dump(mode="json", exclude_none=True) for event in events],
+        "events": [_serialize_event_summary(event) for event in events],
     }
+
+
+# ==========================================================================
+# Event drill-down (Level 2 / Level 3)
+# ==========================================================================
+
+@app.get("/api/v1/events/{event_id}")
+def event_detail(
+    event_id: str,
+    subject_id: int = Query(...),
+    limit: int = Query(200, ge=1, le=2000),
+    offset: int = Query(0, ge=0),
+):
+    """
+    - Cluster event (is_derived=True): returns the cluster's own
+      metadata plus a paginated slice of its children. Each child
+      already carries its own Evidence (source_table + source_fields =
+      the exact raw row), so no further request is needed to populate
+      the provenance drawer for any row shown here.
+    - Non-cluster event: returned as-is, evidence included. Present so
+      the frontend can hit one endpoint uniformly, and so a direct
+      link to a single event (e.g. from a chat citation) works without
+      the Level-1 payload already being loaded client-side.
+    """
+    conn = app.state.db.cursor()
+
+    cached = timeline_cache.get(subject_id)
+    if cached is None:
+        try:
+            cached = get_patient_timeline(conn, subject_id)
+        except ScopeNotFoundError as e:
+            raise HTTPException(status_code=404, detail=str(e))
+        timeline_cache.set(subject_id, cached)
+
+    event = find_event(cached.events, event_id)
+    if event is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"No event found with event_id={event_id} for subject_id={subject_id}.",
+        )
+
+    data = event.model_dump(mode="json", exclude_none=True, exclude={"children"})
+
+    if event.children:
+        total = len(event.children)
+        page = event.children[offset: offset + limit]
+        data["children"] = [
+            child.model_dump(mode="json", exclude_none=True)
+            for child in page
+        ]
+        data["children_total"] = total
+        data["children_limit"] = limit
+        data["children_offset"] = offset
+
+    return data
 
 
 @app.post("/api/v1/ask", response_model=AskResponse)

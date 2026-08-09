@@ -1170,3 +1170,23 @@ def _count(event: Event) -> int:
             for child in event.children
         )
     )
+
+# ==========================================================================
+# Event lookup (drill-down)
+# ==========================================================================
+
+def find_event(events: list[Event], event_id: str) -> Event | None:
+    """
+    Recursively search a reconstructed timeline for event_id, including
+    inside cluster children. Used by GET /api/v1/events/{event_id} to
+    serve both Level 2 (cluster -> members) and Level 3 (single leaf
+    event -> its own evidence) from one endpoint, without re-querying
+    DuckDB -- the cached Timeline already has everything.
+    """
+    for event in events:
+        if event.event_id == event_id:
+            return event
+        found = find_event(event.children, event_id)
+        if found is not None:
+            return found
+    return None
