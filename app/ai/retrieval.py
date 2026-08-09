@@ -983,7 +983,7 @@ def medications(
 
     query = """
         SELECT
-            e.mar_id AS emar_id,
+            e.emar_id AS emar_id,
             e.subject_id,
             e.hadm_id,
             e.medication,
@@ -1080,7 +1080,7 @@ def medications(
         ])
 
     query += """
-        ORDER BY e.charttime ASC, e.mar_id ASC
+        ORDER BY e.charttime ASC, e.emar_id ASC
         LIMIT 200
     """
 

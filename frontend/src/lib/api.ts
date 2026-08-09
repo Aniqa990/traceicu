@@ -1,3 +1,5 @@
+//api.ts
+
 import type {
   AskResponse,
   SubjectOverview,
@@ -8,9 +10,9 @@ import type {
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? ""
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
+async function request<T>(path: string, init?: RequestInit, timeoutMs = 6000): Promise<T> {
   const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), 6000)
+  const timeout = setTimeout(() => controller.abort(), timeoutMs)
   try {
     const res = await fetch(`${BASE_URL}${path}`, {
       ...init,
@@ -52,5 +54,5 @@ export async function ask(subjectId: number, question: string): Promise<AskRespo
   return await request<AskResponse>(`/api/v1/ask`, {
     method: "POST",
     body: JSON.stringify({ subject_id: subjectId, question }),
-  })
+  }, 25000)
 }

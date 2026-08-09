@@ -51,32 +51,35 @@ def build_answer(
 
     facts = result.facts
 
+    def cite(i: int) -> str:
+        return f" [E{i + 1}]"
+
     if intent in ("first_measurement", "last_measurement"):
         f = facts[0]
         which = "first" if intent == "first_measurement" else "last"
         label = f.get("label") or concept or "measurement"
-        answer = f"The {which} {label} value was {_fmt_value(f)} at {f.get('charttime')}."
+        answer = f"The {which} {label} value was {_fmt_value(f)} at {f.get('charttime')}.{cite(0)}"
 
     elif intent == "measurements_in_range":
         label = facts[0].get("label") or concept or "measurement"
-        shown = "; ".join(f"{_fmt_value(f)} at {f.get('charttime')}" for f in facts[:10])
+        shown = "; ".join(f"{_fmt_value(f)} at {f.get('charttime')}{cite(i)}" for i, f in enumerate(facts[:10]))
         answer = f"Found {len(facts)} {label} measurement(s): {shown}" + (" ..." if len(facts) > 10 else "")
 
     elif intent == "medications":
         shown = "; ".join(
-            f"{f.get('medication')} ({f.get('event_txt')}) at {f.get('charttime')}"
-            for f in facts[:10]
+            f"{f.get('medication')} ({f.get('event_txt')}) at {f.get('charttime')}{cite(i)}"
+            for i, f in enumerate(facts[:10])
         )
         answer = f"Found {len(facts)} medication administration record(s): {shown}" + (" ..." if len(facts) > 10 else "")
 
     elif intent == "procedures":
-        shown = "; ".join(f"{f.get('long_title') or f.get('icd_code')} on {f.get('chartdate')}" for f in facts)
+        shown = "; ".join(f"{f.get('long_title') or f.get('icd_code')} on {f.get('chartdate')}{cite(i)}" for i, f in enumerate(facts))
         answer = f"Found {len(facts)} procedure record(s): {shown}"
 
     elif intent == "transfers":
         shown = "; ".join(
-            f"{f.get('careunit') or f.get('eventtype')} from {f.get('intime')} to {f.get('outtime')}"
-            for f in facts
+            f"{f.get('careunit') or f.get('eventtype')} from {f.get('intime')} to {f.get('outtime')}{cite(i)}"
+            for i, f in enumerate(facts)
         )
         answer = f"Found {len(facts)} transfer record(s): {shown}"
 
@@ -84,14 +87,16 @@ def build_answer(
         f = facts[0]
         answer = (
             f"ICU stay {f.get('stay_id')}: {f.get('first_careunit')} -> {f.get('last_careunit')}, "
-            f"from {f.get('intime')} to {f.get('outtime')} (length of stay {f.get('los')} days)."
+            f"from {f.get('intime')} to {f.get('outtime')} (length of stay {f.get('los')} days).{cite(0)}"
         )
 
     elif intent == "event_count":
         f = facts[0]
-        answer = f"{f['count']} {f['table']} record(s) found for this scope."
+        answer = f"{f['count']} {f['table']} record(s) found for this scope.{cite(0)}"
 
     elif intent == "timeline":
+        # evidence here is a flattened slice across many events, not 1:1 with `facts`
+        # (see main.py's "timeline" branch), so no per-item citations for this intent.
         types = {}
         for f in facts:
             types[f["event_type"]] = types.get(f["event_type"], 0) + 1
