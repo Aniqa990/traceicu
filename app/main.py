@@ -22,7 +22,7 @@ from app.ai.retrieval import (
     event_count,
 )
 from app.ai.answer import build_answer, out_of_scope_response, unsupported_response
-from app.ai.schemas import AskRequest, AskResponse, QueryPlan
+from app.ai.schema import AskRequest, AskResponse, QueryPlan
 
 
 @asynccontextmanager
