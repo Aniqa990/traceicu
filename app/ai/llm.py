@@ -1,9 +1,9 @@
 """
-Thin wrapper around Hugging Face's hosted Inference Providers API.
+Thin wrapper around Groq's Chat API with llama-3.1-8b-instant.
 
 No local model download, no torch/transformers install, nothing runs
 on your machine -- every call is an HTTPS request to
-https://router.huggingface.co, authenticated with your free HF_TOKEN.
+https://api.groq.com, authenticated with your free GROQ_API_KEY.
 
 IMPORTANT: this model is used ONLY to turn a natural-language question
 into a structured JSON query plan (see app/ai/intents.py). It never sees
@@ -16,10 +16,10 @@ network (never patient rows), this is safe even though the model call
 is remote.
 
 Setup (one-time):
-    1. Create a free account at https://huggingface.co
-    2. Create a token at https://huggingface.co/settings/tokens (Read scope)
-    3. Set it as an environment variable: HF_TOKEN=hf_xxxxxxxxxxxx
-    4. pip install -r requirements-ai.txt   (just huggingface_hub, nothing else)
+    1. Create a free account at https://console.groq.com
+    2. Create an API key at https://console.groq.com/keys
+    3. Set it as an environment variable: GROQ_API_KEY=gsk_xxxxxxxxxxxx
+    4. pip install groq
 """
 from __future__ import annotations
 
@@ -27,7 +27,7 @@ import json
 import re
 from functools import lru_cache
 
-from app.config import HF_TOKEN, LLM_MODEL_ID
+from app.config import GROQ_API_KEY, LLM_MODEL_ID
 
 
 class LLMConfigError(RuntimeError):
@@ -36,29 +36,27 @@ class LLMConfigError(RuntimeError):
 
 class LLMClient:
     def __init__(self, model_id: str = LLM_MODEL_ID,
-                 token: str | None = HF_TOKEN):
-        if not token:
+                 api_key: str | None = GROQ_API_KEY):
+        if not api_key:
             raise LLMConfigError(
-                "HF_TOKEN is not set. Get a free token at "
-                "https://huggingface.co/settings/tokens and set it as an "
+                "GROQ_API_KEY is not set. Get a free API key at "
+                "https://console.groq.com/keys and set it as an "
                 "environment variable before starting the app, e.g.\n"
-                "  Windows (PowerShell): $env:HF_TOKEN = \"hf_xxxxxxxxxxxx\"\n"
-                "  macOS/Linux:          export HF_TOKEN=hf_xxxxxxxxxxxx"
+                "  Windows (PowerShell): $env:GROQ_API_KEY = \"gsk_xxxxxxxxxxxx\"\n"
+                "  macOS/Linux:          export GROQ_API_KEY=gsk_xxxxxxxxxxxx"
             )
 
         self.model_id = model_id
-        self.token = token
+        self.api_key = api_key
         self._client = None
 
     def _client_lazy(self):
         if self._client is not None:
             return self._client
 
-        from huggingface_hub import InferenceClient
+        from groq import Groq
 
-        kwargs = {"api_key": self.token}
-
-        self._client = InferenceClient(**kwargs)
+        self._client = Groq(api_key=self.api_key)
         return self._client
 
     # ------------------------------------------------------------------
@@ -72,7 +70,7 @@ class LLMClient:
                 {"role": "user", "content": user},
             ],
             max_tokens=max_new_tokens,
-            temperature=0,
+            temperature=0.0,
         )
         return completion.choices[0].message.content
 

@@ -15,9 +15,9 @@ MAX_ICU_OBSERVATIONS = 5000
 
 HF_TOKEN = os.getenv("HF_TOKEN")
 HF_PROVIDER = os.getenv("HF_PROVIDER")
- 
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
-LLM_MODEL_ID = "Qwen/Qwen2.5-7B-Instruct"
+LLM_MODEL_ID = "llama-3.1-8b-instant"
 
  
 # Max number of patients' reconstructed timelines to keep in memory at once.
