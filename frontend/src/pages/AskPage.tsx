@@ -181,6 +181,40 @@ function EmptyState({ onPick }: { onPick: (q: string) => void }) {
   )
 }
 
+// frontend/src/pages/AskPage.tsx — add this component, near AssistantMessage
+
+function CitedAnswer({
+  text,
+  evidence,
+  onCite,
+}: {
+  text: string
+  evidence: Evidence[]
+  onCite: (label: string, ev: Evidence) => void
+}) {
+  const parts = text.split(/(\[E\d+\])/g)
+  return (
+    <p>
+      {parts.map((part, i) => {
+        const m = part.match(/^\[E(\d+)\]$/)
+        if (!m) return <span key={i}>{part}</span>
+        const idx = Number(m[1]) - 1
+        const ev = evidence[idx]
+        if (!ev) return <span key={i}>{part}</span>
+        return (
+          <button
+            key={i}
+            onClick={() => onCite(`Evidence ${idx + 1}`, ev)}
+            className="mx-0.5 inline-flex translate-y-[-1px] items-center rounded bg-primary/15 px-1.5 py-0.5 align-middle font-mono text-[11px] font-semibold text-primary transition-colors hover:bg-primary/25"
+          >
+            {part}
+          </button>
+        )
+      })}
+    </p>
+  )
+}
+
 function AssistantMessage({
   response,
   onCite,
@@ -210,9 +244,9 @@ function AssistantMessage({
             {response.latency_ms} ms
           </span>
         </div>
-        <p>{response.answer}</p>
+        <CitedAnswer text={response.answer} evidence={response.evidence} onCite={onCite} />
       </div>
-
+      
       {response.evidence.length > 0 ? (
         <div className="space-y-1.5 pl-1">
           <div className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-muted-foreground">
