@@ -1,8 +1,6 @@
 import { Link } from "react-router-dom"
 import { ChevronLeft, User } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
-import { formatDate } from "@/lib/utils"
 import type { SubjectOverview } from "@/lib/types"
 
 export function SubjectHeader({
@@ -49,20 +47,6 @@ export function SubjectHeader({
               </div>
             </div>
 
-            {primary ? (
-              <div className="flex flex-wrap items-center gap-2 text-sm">
-                <Badge variant="secondary" className="font-mono">
-                  Encounter {primary.hadm_id}
-                </Badge>
-                <span className="text-muted-foreground">
-                  {formatDate(primary.admittime)} — {formatDate(primary.dischtime)}
-                </span>
-                {primary.admission_type ? (
-                  <Badge variant="outline">{primary.admission_type}</Badge>
-                ) : null}
-                <Badge variant="outline">{primary.icu_stay_count} ICU stay(s)</Badge>
-              </div>
-            ) : null}
           </div>
         )}
       </div>

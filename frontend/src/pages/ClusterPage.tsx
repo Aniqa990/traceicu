@@ -3,7 +3,6 @@ import { Link, useParams } from "react-router-dom"
 import { ChevronLeft, FileText } from "lucide-react"
 import { AppHeader } from "@/components/app-header"
 import { ProvenanceDrawer } from "@/components/provenance-drawer"
-import { DemoBanner } from "@/components/demo-banner"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
@@ -63,8 +62,6 @@ export function ClusterPage() {
         >
           <ChevronLeft className="size-4" /> Timeline
         </Link>
-
-        <DemoBanner />
 
         {loading ? (
           <div className="space-y-3">

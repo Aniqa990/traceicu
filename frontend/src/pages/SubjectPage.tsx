@@ -5,7 +5,6 @@ import { SubjectHeader } from "@/components/subject-header"
 import { SubjectNav } from "@/components/subject-nav"
 import { TimelineView } from "@/components/timeline/timeline-view"
 import { ProvenanceDrawer } from "@/components/provenance-drawer"
-import { DemoBanner } from "@/components/demo-banner"
 import { Skeleton } from "@/components/ui/skeleton"
 import { getSubjectOverview, getTimeline } from "@/lib/api"
 import type { SubjectOverview, TimelineEvent } from "@/lib/types"
@@ -46,7 +45,6 @@ export function SubjectPage() {
       <SubjectNav subjectId={subjectId} current="timeline" />
 
       <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
-        <DemoBanner />
         <div className="mb-6 flex items-baseline justify-between">
           <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
             Patient journey
