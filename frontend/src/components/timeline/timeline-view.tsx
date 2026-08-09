@@ -81,9 +81,9 @@ export function TimelineView({
                       </span>
                     ) : null}
                   </span>
-                  {event.event_subtype ? (
+                  {event.event_type ? (
                     <span className="mt-0.5 block truncate text-xs text-muted-foreground">
-                      {event.event_subtype}
+                      {event.event_type}
                     </span>
                   ) : null}
                 </span>

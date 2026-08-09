@@ -122,7 +122,7 @@ export function SearchPage() {
               ) : results.length === 0 ? (
                 <div className="px-4 py-3 text-sm text-muted-foreground">
                   {numeric
-                    ? "No matching subject_id found in the demo set."
+                    ? "No matching subject_id found."
                     : "subject_id is numeric — type digits only."}
                 </div>
               ) : (
@@ -192,8 +192,8 @@ export function SearchPage() {
               <ShieldCheck className="size-4 text-primary" /> Terms &amp; conditions
             </div>
             <p className="text-sm leading-relaxed text-muted-foreground">
-              For research and educational use only. Not a medical device and not for clinical
-              decision-making. Use is governed by the PhysioNet Credentialed Health Data License.
+              Research and educational prototype only. Not for clinical use. Do not use for diagnosis, treatment, 
+              triage, or emergency decisions. 
             </p>
           </div>
         </div>
