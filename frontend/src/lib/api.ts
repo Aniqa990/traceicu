@@ -1,9 +1,13 @@
 // Thin API client for the TraceICU FastAPI backend.
 //
-// Set VITE_API_BASE_URL to point at the running backend (e.g.
-// http://localhost:8000). When the backend is unreachable — as in the
-// hosted preview — every call transparently falls back to the demo
-// fixtures in ./mock so the UI stays fully explorable.
+// In local dev, Vite proxies /api/* to the backend on 127.0.0.1:8000
+// (see vite.config.ts), so VITE_API_BASE_URL is optional.
+//
+// Set VITE_API_BASE_URL only when the frontend should call a different
+// backend origin (for example a deployed API). When the backend is
+// unreachable — as in the hosted preview — every call transparently
+// falls back to the demo fixtures in ./mock so the UI stays fully
+// explorable.
 
 import {
   MOCK_OVERVIEW,
